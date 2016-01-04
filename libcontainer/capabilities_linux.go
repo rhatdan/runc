@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/syndtr/gocapability/capability"
 )
@@ -66,4 +67,19 @@ func (w *whitelist) drop() error {
 	w.pid.Clear(allCapabilityTypes)
 	w.pid.Set(allCapabilityTypes, w.keep...)
 	return w.pid.Apply(allCapabilityTypes)
+}
+
+func prctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
+	_, _, e1 := syscall.Syscall6(syscall.SYS_PRCTL, uintptr(option), arg2, arg3, arg4, arg5, 0)
+	if e1 != 0 {
+		err = e1
+	}
+	return
+}
+
+// syscall.PR_SET_NO_NEW_PRIVS not currently set
+const PR_SET_NO_NEW_PRIVS = 0x26
+
+func NoNewPrivs() error {
+	return prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
 }
